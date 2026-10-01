@@ -27,6 +27,8 @@
   header img{width:52px; height:52px; object-fit:contain; border-radius:8px;}
   header .ttl{font-weight:900; letter-spacing:1px; color:var(--gold); font-size:1.05rem; line-height:1.1;}
   header .sub{color:var(--accent2); font-size:.72rem; letter-spacing:1px;}
+  header .version{margin-left:auto; flex:0 0 auto; color:var(--muted); font-size:.72rem;
+    font-variant-numeric:tabular-nums; border:1px solid var(--border); border-radius:6px; padding:3px 7px;}
 
   .session{background:var(--panel); border-bottom:1px solid var(--border);
     padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px;}
@@ -109,6 +111,7 @@
     <div class="ttl">BROKEN SLING</div>
     <div class="sub">Carp Counter · RodPod 4</div>
   </div>
+  <span class="version" id="appVersion"></span>
 </header>
 
 <div class="session">
@@ -198,6 +201,8 @@
 </div>
 
 <script>
+var APP_VERSION='1.0.0';
+document.getElementById('appVersion').textContent='v'+APP_VERSION;
 var LS_KEY='bs_counter_v1';
 var state = load();
 function load(){
