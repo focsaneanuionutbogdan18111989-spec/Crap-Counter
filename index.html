@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version: v1.4.0 -->
+<!-- Version: v1.5.0 -->
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
@@ -67,6 +67,19 @@
   .timer{font-family:var(--display); font-size:3rem; font-weight:700; color:var(--accent2); font-variant-numeric:tabular-nums; letter-spacing:2px; line-height:1.05;}
   .timer.running{color:var(--gold); text-shadow:0 0 22px rgba(233,199,90,.45);}
   .startedAt{font-size:.72rem; color:var(--muted); margin-bottom:10px;}
+  .post-summary{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; align-items:center;}
+  .post-summary .timer{grid-column:1; font-size:2.35rem;}
+  .post-summary .startedAt{grid-column:1; margin:0;}
+  .post-summary .post-remaining{grid-column:1; color:var(--muted); font-size:.72rem; font-variant-numeric:tabular-nums;}
+  .post-summary .post-remaining.due{color:var(--gold2); font-weight:700;}
+  .post-summary .btn-catch{grid-column:2; grid-row:1 / span 3; width:auto; min-width:100px; margin:0; padding:12px 16px; font-size:1rem; letter-spacing:1.5px;}
+  .post-expand{width:100%; margin-top:12px; padding:8px 10px; display:flex; justify-content:center; align-items:center; gap:8px;
+    color:var(--muted); background:rgba(255,255,255,.035); border:1px solid var(--border); border-radius:10px; font-size:.72rem; font-weight:700;}
+  .post-expand:hover,.post-expand:focus-visible{color:var(--gold); border-color:rgba(233,199,90,.4); outline:none;}
+  .post-expand .chevron{display:inline-block; transition:transform .2s ease;}
+  .post-expand[aria-expanded="true"] .chevron{transform:rotate(180deg);}
+  .post-details{padding-top:4px;}
+  .post-details[hidden]{display:none;}
   .row{display:flex; gap:8px; margin:10px 0; flex-wrap:wrap;}
   .row.two > *{flex:1 1 46%;}
   .row.three > *{flex:1 1 30%; padding-left:8px; padding-right:8px;}
@@ -326,7 +339,7 @@
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
-var APP_VERSION='1.4.0';
+var APP_VERSION='1.5.0';
 document.getElementById('appVersion').textContent='v'+APP_VERSION;
 var LS_KEY='bs_counter_v1';
 var state = load();
@@ -375,10 +388,21 @@ function renderPosts(){
     var p=state.posts[i]; var running=p.timerStart!=null; var el=p.elapsed+(running?(Date.now()-p.timerStart):0);
     var nC=state.catches.filter(function(x){return x.post===i+1;}).length;
     var kgC=state.catches.filter(function(x){return x.post===i+1;}).reduce(function(a,b){return a+b.kg;},0);
+    var expanded=!!(ui.expandedPosts&&ui.expandedPosts[i]);
+    var remaining=p.soakDeadline?fmt(p.soakDeadline-Date.now()):(p.soakAlerted?'Timp expirat':p.soakDurationMs?'Durată setată · neînceput':'Nesetat');
     h+='<div class="post" id="post'+i+'" style="--c:'+ROD_C[i]+'">'
-      +'<h3><span><i class="pdot"></i>POST '+(i+1)+'</span> <span class="badge">'+nC+' pești · '+kgC.toFixed(1)+' kg</span></h3>'
-      +'<div class="timer'+(running?' running':'')+'" id="tm'+i+'">'+fmt(el)+'</div>'
-      +'<div class="startedAt">'+(running?('▶ Lansat la '+hhmm(p.timerStart)):(p.elapsed>0?'⏸ Oprit ('+fmt(p.elapsed)+')':'—'))+'</div>'
+      +'<h3><span><i class="pdot"></i>POST '+(i+1)+'</span></h3>'
+      +'<div class="post-summary">'
+        +'<div class="timer'+(running?' running':'')+'" id="tm'+i+'">'+fmt(el)+'</div>'
+        +'<div class="startedAt">'+(p.timerStart||p.lastLaunchTs?('Lansat la '+hhmm(p.timerStart||p.lastLaunchTs)+(running?'':' · Oprit')):'Nelansat')+'</div>'
+        +'<div class="post-remaining'+(p.soakAlerted?' due':'')+'" id="postRemaining'+i+'">Rămâne: '+remaining+'</div>'
+        +'<button class="btn-catch" onclick="openCatch('+i+')">🎣 CATCH</button>'
+      +'</div>'
+      +'<button type="button" class="post-expand" aria-controls="postDetails'+i+'" aria-expanded="'+expanded+'" onclick="togglePostDetails('+i+');renderPosts()">'
+        +(expanded?'Restrânge':'Detalii post')+' <span class="chevron" aria-hidden="true">▾</span>'
+      +'</button>'
+      +'<div class="post-details" id="postDetails'+i+'"'+(expanded?'':' hidden')+'>'
+      +'<div class="post-detail-caption">'+nC+' capturi · '+kgC.toFixed(1)+' kg</div>'
       +'<div class="row"><div style="flex:1"><label class="fl">Timpul lansetei în apă</label>'
         +'<div class="row two" style="margin:0">'
           +'<input type="number" min="1" step="1" inputmode="numeric" id="soakValue'+i+'" value="'+(p.soakValue||'')+'" onchange="setSoakDuration('+i+')" placeholder="Durată"'+(running?' disabled':'')+'>'
@@ -404,17 +428,21 @@ function renderPosts(){
       +'<div class="row"><div style="flex:1"><label class="fl">Distanță (m)</label>'
         +'<input type="number" min="0" step="1" inputmode="numeric" value="'+(p.distance||'')+'" onchange="setDistance('+i+',this.value)" placeholder="ex. 120">'
       +'</div></div>'
-      +'<button class="btn-catch" onclick="openCatch('+i+')">🎣 CATCH</button>'
-    +'</div>';
+      +'</div>';
   }
   c.innerHTML=h;
   updateHero();
   for(var k=0;k<4;k++) updateSoakCountdown(k);
 }
+function togglePostDetails(i){
+  ui.expandedPosts=ui.expandedPosts||[false,false,false,false];
+  ui.expandedPosts[i]=!ui.expandedPosts[i];
+  saveUI();
+}
 function toggleTimer(i){ var p=state.posts[i];
   if(p.timerStart){ p.elapsed+=Date.now()-p.timerStart; p.timerStart=null; p.soakDeadline=null; p.soakAlerted=false; }
   else {
-    p.timerStart=Date.now(); p.elapsed=0;
+    p.timerStart=Date.now(); p.lastLaunchTs=p.timerStart; p.elapsed=0;
     if(p.soakDurationMs>0){
       p.soakDeadline=p.timerStart+p.soakDurationMs;
       p.soakAlerted=false;
@@ -423,7 +451,7 @@ function toggleTimer(i){ var p=state.posts[i];
     }
   }
   save(); renderPosts(); }
-function resetTimer(i){ if(confirm('Reset cronometru Post '+(i+1)+'?')){ state.posts[i].timerStart=null; state.posts[i].elapsed=0; state.posts[i].soakDeadline=null; state.posts[i].soakAlerted=false; save(); renderPosts(); } }
+function resetTimer(i){ if(confirm('Reset cronometru Post '+(i+1)+'?')){ state.posts[i].timerStart=null; state.posts[i].lastLaunchTs=null; state.posts[i].elapsed=0; state.posts[i].soakDeadline=null; state.posts[i].soakAlerted=false; save(); renderPosts(); } }
 function setBait(i,v){ state.posts[i].bait=v; save(); }
 function setMix(i,v){ state.posts[i].mix=v; save(); }
 function setDistance(i,v){ var distance=v===''?'':parseFloat(v); state.posts[i].distance=isFinite(distance)&&distance>=0?distance:''; save(); }
@@ -449,11 +477,12 @@ function prepareAlarmAudio(){
   try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended')actx.resume(); }catch(e){}
 }
 function updateSoakCountdown(i){
-  var el=document.getElementById('soakCountdown'+i); if(!el)return;
+  var el=document.getElementById('soakCountdown'+i);
+  var summary=document.getElementById('postRemaining'+i);
   var p=state.posts[i];
-  if(p.soakDeadline){ el.classList.remove('due'); el.textContent='Rămâne: '+fmt(p.soakDeadline-Date.now()); }
-  else if(p.soakAlerted){ el.classList.add('due'); el.textContent='Timpul a expirat · scoate lanseta'; }
-  else { el.classList.remove('due'); el.textContent=p.soakDurationMs?'Durată setată · pornește lanseta pentru alarmă':''; }
+  var text=p.soakDeadline?fmt(p.soakDeadline-Date.now()):p.soakAlerted?'Expirat':p.soakDurationMs?'Setat · neînceput':'—';
+  if(el){ el.classList.toggle('due',!!p.soakAlerted); el.textContent=p.soakAlerted?'Timpul a expirat · scoate lanseta':p.soakDeadline?'Rămâne: '+text:p.soakDurationMs?'Durată setată · pornește lanseta pentru alarmă':''; }
+  if(summary){ summary.classList.toggle('due',!!p.soakAlerted); summary.textContent='Rămâne: '+text; }
 }
 function checkSoakTimers(){
   var now=Date.now();
