@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version: v1.5.0 -->
+<!-- Version: v1.5.1 -->
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
@@ -54,11 +54,14 @@
 
   main{padding:14px; max-width:760px; margin:0 auto;}
   .view{display:none;} .view.active{display:block; animation:viewin .35s ease;}
+  #v-posturi.view.active{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-items:start;}
   @keyframes viewin{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
 
   .post{--c:var(--accent); background:linear-gradient(180deg,rgba(26,52,40,.72),rgba(12,26,20,.72)); border:1px solid var(--border); border-radius:20px;
     padding:16px; margin-bottom:16px; box-shadow:var(--shadow); position:relative; overflow:hidden;
     -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);}
+  #v-posturi .post{min-width:0; margin:0; padding:12px;}
+  #v-posturi .post.expanded{grid-column:1/-1; padding:16px;}
   .post::before{content:""; position:absolute; left:0; right:0; top:0; height:3px; background:linear-gradient(90deg,transparent,var(--c),transparent); opacity:.85;}
   .post::after{content:""; position:absolute; right:-60px; top:-60px; width:180px; height:180px; border-radius:50%;
     background:var(--c); opacity:.07; filter:blur(40px); pointer-events:none;}
@@ -67,12 +70,12 @@
   .timer{font-family:var(--display); font-size:3rem; font-weight:700; color:var(--accent2); font-variant-numeric:tabular-nums; letter-spacing:2px; line-height:1.05;}
   .timer.running{color:var(--gold); text-shadow:0 0 22px rgba(233,199,90,.45);}
   .startedAt{font-size:.72rem; color:var(--muted); margin-bottom:10px;}
-  .post-summary{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; align-items:center;}
-  .post-summary .timer{grid-column:1; font-size:2.35rem;}
-  .post-summary .startedAt{grid-column:1; margin:0;}
-  .post-summary .post-remaining{grid-column:1; color:var(--muted); font-size:.72rem; font-variant-numeric:tabular-nums;}
+  .post-summary{display:grid; grid-template-columns:minmax(0,1fr); gap:3px; align-items:start;}
+  .post-summary .timer{grid-column:1; font-size:clamp(1.35rem,3.5vw,2rem); letter-spacing:1px;}
+  .post-summary .startedAt{grid-column:1; margin:0; font-size:.66rem;}
+  .post-summary .post-remaining{grid-column:1; color:var(--muted); font-size:.66rem; font-variant-numeric:tabular-nums;}
   .post-summary .post-remaining.due{color:var(--gold2); font-weight:700;}
-  .post-summary .btn-catch{grid-column:2; grid-row:1 / span 3; width:auto; min-width:100px; margin:0; padding:12px 16px; font-size:1rem; letter-spacing:1.5px;}
+  .post-summary .btn-catch{grid-column:1; grid-row:auto; width:100%; min-width:0; margin:6px 0 0; padding:10px 8px; font-size:.95rem; letter-spacing:1px;}
   .post-expand{width:100%; margin-top:12px; padding:8px 10px; display:flex; justify-content:center; align-items:center; gap:8px;
     color:var(--muted); background:rgba(255,255,255,.035); border:1px solid var(--border); border-radius:10px; font-size:.72rem; font-weight:700;}
   .post-expand:hover,.post-expand:focus-visible{color:var(--gold); border-color:rgba(233,199,90,.4); outline:none;}
@@ -339,7 +342,7 @@
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
-var APP_VERSION='1.5.0';
+var APP_VERSION='1.5.1';
 document.getElementById('appVersion').textContent='v'+APP_VERSION;
 var LS_KEY='bs_counter_v1';
 var state = load();
@@ -390,7 +393,7 @@ function renderPosts(){
     var kgC=state.catches.filter(function(x){return x.post===i+1;}).reduce(function(a,b){return a+b.kg;},0);
     var expanded=!!(ui.expandedPosts&&ui.expandedPosts[i]);
     var remaining=p.soakDeadline?fmt(p.soakDeadline-Date.now()):(p.soakAlerted?'Timp expirat':p.soakDurationMs?'Durată setată · neînceput':'Nesetat');
-    h+='<div class="post" id="post'+i+'" style="--c:'+ROD_C[i]+'">'
+    h+='<div class="post'+(expanded?' expanded':'')+'" id="post'+i+'" style="--c:'+ROD_C[i]+'">'
       +'<h3><span><i class="pdot"></i>POST '+(i+1)+'</span></h3>'
       +'<div class="post-summary">'
         +'<div class="timer'+(running?' running':'')+'" id="tm'+i+'">'+fmt(el)+'</div>'
@@ -428,7 +431,7 @@ function renderPosts(){
       +'<div class="row"><div style="flex:1"><label class="fl">Distanță (m)</label>'
         +'<input type="number" min="0" step="1" inputmode="numeric" value="'+(p.distance||'')+'" onchange="setDistance('+i+',this.value)" placeholder="ex. 120">'
       +'</div></div>'
-      +'</div>';
+      +'</div></div>';
   }
   c.innerHTML=h;
   updateHero();
