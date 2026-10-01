@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Version: v1.2.2 -->
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
@@ -41,6 +42,32 @@
 
   main{padding:14px; max-width:760px; margin:0 auto;}
   .view{display:none;} .view.active{display:block;}
+  .pod-overview{max-width:900px; margin:0 auto; display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:12px; align-items:start;}
+  .pod-heading{display:flex; align-items:end; justify-content:space-between; gap:12px; margin:0 2px 12px;}
+  .pod-heading h2{margin:0; border:0; padding:0; color:var(--gold); font-size:1.1rem;}
+  .pod-heading .pod-count{color:var(--muted); font-size:.78rem;}
+  .pod-heading,.pod-figure{grid-column:1/-1;}
+  .pod-heading{grid-row:1;}
+  .pod-figure{grid-column:1; grid-row:2; position:relative; width:100%; aspect-ratio:720/520; overflow:hidden; border:1px solid var(--border); border-radius:8px; background:#edf0ed;}
+  .pod-figure img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;}
+  .rod-hotspot{position:absolute; top:55%; width:clamp(32px,5vw,42px); aspect-ratio:1; transform:translate(-50%,-50%);
+    display:grid; place-items:center; border:2px solid #f2d978; border-radius:50%; background:rgba(12,31,22,.9); color:#fff2b0;
+    font-weight:900; font-size:.9rem; box-shadow:0 2px 12px rgba(0,0,0,.6);}
+  .rod-hotspot.running{border-color:#ff6b5a; box-shadow:0 0 0 5px rgba(255,107,90,.2),0 2px 12px rgba(0,0,0,.6);}
+  .rod-rail{grid-column:2; grid-row:2; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
+  .rod-card{min-width:0; min-height:80px; padding:9px 6px; text-align:left; border:1px solid var(--border); border-radius:8px;
+    background:var(--panel); color:var(--text);}
+  .rod-card:hover,.rod-card:focus-visible{border-color:var(--gold); outline:none;}
+  .rod-card.running{border-color:var(--danger);}
+  .rod-card-top{display:flex; align-items:center; justify-content:space-between; gap:4px; color:var(--accent2); font-size:.72rem; font-weight:800;}
+  .rod-card-time{display:block; margin:4px 0 2px; color:var(--gold); font-size:.88rem; font-variant-numeric:tabular-nums; font-weight:800;}
+  .rod-card-meta{display:block; overflow:hidden; color:var(--muted); font-size:.65rem; text-overflow:ellipsis; white-space:nowrap;}
+  @media(max-width:620px){
+    .pod-overview{grid-template-columns:minmax(0,1fr);}
+    .pod-heading,.pod-figure,.rod-rail{grid-column:1;}
+    .pod-figure{grid-row:2;}
+    .rod-rail{grid-row:3;}
+  }
 
   .post{background:var(--panel); border:1px solid var(--border); border-radius:14px;
     padding:14px; margin-bottom:14px;}
@@ -94,6 +121,16 @@
   .modal{position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:50; padding:20px;}
   .modal.show{display:flex;}
   .modal .box{background:var(--panel); border:1px solid var(--gold); border-radius:16px; padding:20px; width:100%; max-width:360px;}
+  .post-modal{z-index:40;}
+  .post-modal .box{max-width:560px; max-height:calc(100vh - 40px); max-height:calc(100dvh - 40px); overflow-y:auto;}
+  .post-modal-head{display:flex; justify-content:space-between; align-items:center; gap:12px;}
+  .post-modal-head h3{margin:0 0 10px; color:var(--gold); font-size:1.2rem;}
+  .post-modal-close{width:36px; height:36px; flex:0 0 auto; margin-top:-8px; border:1px solid var(--border); border-radius:8px;
+    background:transparent; color:var(--text); font-size:1.2rem;}
+  .post-detail-timer{font-size:2rem; font-weight:800; color:var(--accent2); font-variant-numeric:tabular-nums;}
+  .post-detail-timer.running{color:var(--gold);}
+  .post-detail-caption{color:var(--muted); font-size:.75rem; margin-bottom:8px;}
+  .post-detail-actions{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0 16px;}
   .modal h3{margin:0 0 12px; color:var(--gold);}
   .modal .mrow{margin-bottom:12px;}
   .modal .actions{display:flex; gap:8px; margin-top:8px;}
@@ -147,6 +184,13 @@
       <div id="chartBait"></div>
       <div class="stat-line" id="statBaitLine"></div>
     </div>
+
+    <div class="chart-card">
+      <h3>📏 Distribuție pe distanță</h3>
+      <div class="ck">Histogramă (kg) + curba Gauss (stil CP/CPK)</div>
+      <div id="chartDistance"></div>
+      <div class="stat-line" id="statDistanceLine"></div>
+    </div>
   </section>
 
   <section id="v-istoric" class="view">
@@ -166,6 +210,16 @@
   <button data-v="stats" onclick="showView('stats',this)"><span class="ic">📊</span>Distribuție</button>
   <button data-v="istoric" onclick="showView('istoric',this)"><span class="ic">📜</span>Istoric</button>
 </nav>
+
+<div class="modal post-modal" id="postModal" role="dialog" aria-modal="true" aria-labelledby="postModalTitle">
+  <div class="box">
+    <div class="post-modal-head">
+      <h3 id="postModalTitle"></h3>
+      <button class="post-modal-close" type="button" onclick="closePost()" aria-label="Închide">×</button>
+    </div>
+    <div id="postDetailContent"></div>
+  </div>
+</div>
 
 <div class="modal" id="catchModal">
   <div class="box">
@@ -201,7 +255,7 @@
 </div>
 
 <script>
-var APP_VERSION='1.0.0';
+var APP_VERSION='1.2.2';
 document.getElementById('appVersion').textContent='v'+APP_VERSION;
 var LS_KEY='bs_counter_v1';
 var state = load();
@@ -212,10 +266,10 @@ function load(){
     baits:["Boilies","Wafter","Pop-up","Porumb","Pelet","Plastic"],
     mixes:["Mix Cămara Crapului","Spărtură aurie","Fishmeal 50%"],
     posts:[
-      {timerStart:null, elapsed:0, bait:"", mix:""},
-      {timerStart:null, elapsed:0, bait:"", mix:""},
-      {timerStart:null, elapsed:0, bait:"", mix:""},
-      {timerStart:null, elapsed:0, bait:"", mix:""}
+      {timerStart:null, elapsed:0, bait:"", mix:"", distance:""},
+      {timerStart:null, elapsed:0, bait:"", mix:"", distance:""},
+      {timerStart:null, elapsed:0, bait:"", mix:"", distance:""},
+      {timerStart:null, elapsed:0, bait:"", mix:"", distance:""}
     ],
     catches:[]
   };
@@ -241,46 +295,82 @@ function renderSession(){
 }
 
 /* POSTS */
+var activePost=null;
 function optionList(arr,sel){ var h='<option value="">— alege —</option>';
   for(var i=0;i<arr.length;i++){ var v=arr[i].replace(/"/g,'&quot;'); h+='<option value="'+v+'"'+(arr[i]===sel?' selected':'')+'>'+arr[i]+'</option>'; } return h; }
 function renderPosts(){
-  var c=document.getElementById('v-posturi'); var h='';
+  var c=document.getElementById('v-posturi');
+  var h='<div class="pod-overview"><div class="pod-heading"><h2>RODPOD</h2><span class="pod-count">4 lansete</span></div>'
+    +'<div class="pod-figure"><img src="rodpod-pro.svg" alt="Ilustrație profesională cu patru lansete pe un suport metalic">';
+  var positions=[22.4,41,59,77.8];
   for(var i=0;i<4;i++){
     var p=state.posts[i]; var running=p.timerStart!=null; var el=p.elapsed+(running?(Date.now()-p.timerStart):0);
     var nC=state.catches.filter(function(x){return x.post===i+1;}).length;
     var kgC=state.catches.filter(function(x){return x.post===i+1;}).reduce(function(a,b){return a+b.kg;},0);
-    h+='<div class="post">'
-      +'<h3>POST '+(i+1)+' <span class="badge">'+nC+' pești · '+kgC.toFixed(1)+' kg</span></h3>'
-      +'<div class="timer'+(running?' running':'')+'" id="tm'+i+'">'+fmt(el)+'</div>'
-      +'<div class="startedAt">'+(running?('▶ Lansat la '+hhmm(p.timerStart)):(p.elapsed>0?'⏸ Oprit ('+fmt(p.elapsed)+')':'—'))+'</div>'
-      +'<div class="row two">'
-        +'<button class="btn '+(running?'btn-danger':'btn-accent')+'" onclick="toggleTimer('+i+')">'+(running?'⏹ STOP':'▶ START')+'</button>'
-        +'<button class="btn btn-ghost" onclick="resetTimer('+i+')">↺ Reset</button>'
-      +'</div>'
-      +'<div class="row"><div style="flex:1"><label class="fl">Momeală pe firul de păr</label>'
-        +'<select onchange="setBait('+i+',this.value)">'+optionList(state.baits,p.bait)+'</select>'
-        +'<div class="miniadd"><input type="text" id="nb'+i+'" placeholder="adaugă momeală nouă"><button class="btn btn-accent" onclick="addBait('+i+')">➕</button></div>'
-      +'</div></div>'
-      +'<div class="row"><div style="flex:1"><label class="fl">Mix bag</label>'
-        +'<select onchange="setMix('+i+',this.value)">'+optionList(state.mixes,p.mix)+'</select>'
-        +'<div class="miniadd"><input type="text" id="nm'+i+'" placeholder="ex. 50% fishmeal, 30% birdfood"><button class="btn btn-accent" onclick="addMix('+i+')">➕</button></div>'
-      +'</div></div>'
-      +'<button class="btn-catch" onclick="openCatch('+i+')">🎣 CATCH</button>'
-    +'</div>';
+    h+='<button class="rod-hotspot'+(running?' running':'')+'" style="left:'+positions[i]+'%" onclick="openPost('+i+')" aria-label="Deschide Post '+(i+1)+'">'+(i+1)+'</button>';
   }
-  c.innerHTML=h;
+  h+='</div><div class="rod-rail">';
+  for(var j=0;j<4;j++){
+    var post=state.posts[j]; var isRunning=post.timerStart!=null;
+    var elapsed=post.elapsed+(isRunning?(Date.now()-post.timerStart):0);
+    var catchCount=state.catches.filter(function(x){return x.post===j+1;}).length;
+    var catchKg=state.catches.filter(function(x){return x.post===j+1;}).reduce(function(a,b){return a+b.kg;},0);
+    h+='<button class="rod-card'+(isRunning?' running':'')+'" onclick="openPost('+j+')" aria-label="Deschide Post '+(j+1)+'">'
+      +'<span class="rod-card-top"><span>POST '+(j+1)+'</span><span>'+(isRunning?'●':'○')+'</span></span>'
+      +'<span class="rod-card-time" id="podTime'+j+'">'+fmt(elapsed)+'</span>'
+      +'<span class="rod-card-meta">'+catchCount+' capturi · '+catchKg.toFixed(1)+' kg · '+(post.distance==null||post.distance===''?'—':post.distance+' m')+'</span>'
+    +'</button>';
+  }
+  c.innerHTML=h+'</div>';
+}
+function openPost(i){ activePost=i; renderPostDetail(); document.getElementById('postModal').classList.add('show'); }
+function closePost(){ document.getElementById('postModal').classList.remove('show'); activePost=null; }
+document.addEventListener('keydown',function(event){
+  if(event.key==='Escape'){
+    if(document.getElementById('catchModal').classList.contains('show')) closeCatch();
+    else closePost();
+  }
+});
+function renderPostDetail(){
+  if(activePost===null)return;
+  var p=state.posts[activePost]; var running=p.timerStart!=null;
+  var elapsed=p.elapsed+(running?(Date.now()-p.timerStart):0);
+  var catchCount=state.catches.filter(function(x){return x.post===activePost+1;}).length;
+  var catchKg=state.catches.filter(function(x){return x.post===activePost+1;}).reduce(function(a,b){return a+b.kg;},0);
+  document.getElementById('postModalTitle').textContent='POST '+(activePost+1);
+  document.getElementById('postDetailContent').innerHTML=
+    '<div class="post-detail-timer'+(running?' running':'')+'" id="postDetailTimer">'+fmt(elapsed)+'</div>'
+    +'<div class="post-detail-caption">'+(running?'Lansat la '+hhmm(p.timerStart):(p.elapsed>0?'Oprit · '+fmt(p.elapsed):'În așteptare'))
+      +' · '+catchCount+' capturi · '+catchKg.toFixed(1)+' kg</div>'
+    +'<div class="post-detail-actions">'
+      +'<button class="btn '+(running?'btn-danger':'btn-accent')+'" onclick="toggleTimer(activePost)">'+(running?'⏹ STOP':'▶ START')+'</button>'
+      +'<button class="btn btn-ghost" onclick="resetTimer(activePost)">↺ Resetează timer</button>'
+    +'</div>'
+    +'<div class="row"><div style="flex:1"><label class="fl">Momeală pe firul de păr</label>'
+      +'<select onchange="setBait(activePost,this.value)">'+optionList(state.baits,p.bait)+'</select>'
+      +'<div class="miniadd"><input type="text" id="postNewBait" placeholder="adaugă momeală nouă"><button class="btn btn-accent" aria-label="Adaugă momeală" onclick="addBait(activePost)">+</button></div>'
+    +'</div></div>'
+    +'<div class="row"><div style="flex:1"><label class="fl">Mix bag</label>'
+      +'<select onchange="setMix(activePost,this.value)">'+optionList(state.mixes,p.mix)+'</select>'
+      +'<div class="miniadd"><input type="text" id="postNewMix" placeholder="ex. 50% fishmeal, 30% birdfood"><button class="btn btn-accent" aria-label="Adaugă mix" onclick="addMix(activePost)">+</button></div>'
+    +'</div></div>'
+    +'<div class="row"><div style="flex:1"><label class="fl">Distanță (m)</label>'
+      +'<input type="number" min="0" step="1" inputmode="numeric" value="'+(p.distance||'')+'" onchange="setDistance(activePost,this.value)" placeholder="ex. 120">'
+    +'</div></div>'
+    +'<button class="btn-catch" onclick="openCatch(activePost)">🎣 CATCH</button>';
 }
 function toggleTimer(i){ var p=state.posts[i];
   if(p.timerStart){ p.elapsed+=Date.now()-p.timerStart; p.timerStart=null; }
   else { p.timerStart=Date.now(); p.elapsed=0; } /* START pornește de la 0 */
-  save(); renderPosts(); }
-function resetTimer(i){ if(confirm('Reset cronometru Post '+(i+1)+'?')){ state.posts[i].timerStart=null; state.posts[i].elapsed=0; save(); renderPosts(); } }
-function setBait(i,v){ state.posts[i].bait=v; save(); }
-function setMix(i,v){ state.posts[i].mix=v; save(); }
-function addBait(i){ var el=document.getElementById('nb'+i); var v=(el.value||'').trim(); if(!v)return;
-  if(state.baits.indexOf(v)<0) state.baits.push(v); state.posts[i].bait=v; el.value=''; save(); renderPosts(); }
-function addMix(i){ var el=document.getElementById('nm'+i); var v=(el.value||'').trim(); if(!v)return;
-  if(state.mixes.indexOf(v)<0) state.mixes.push(v); state.posts[i].mix=v; el.value=''; save(); renderPosts(); }
+  save(); renderPosts(); if(activePost===i)renderPostDetail(); }
+function resetTimer(i){ if(confirm('Reset cronometru Post '+(i+1)+'?')){ state.posts[i].timerStart=null; state.posts[i].elapsed=0; save(); renderPosts(); if(activePost===i)renderPostDetail(); } }
+function setBait(i,v){ state.posts[i].bait=v; save(); renderPosts(); }
+function setMix(i,v){ state.posts[i].mix=v; save(); renderPosts(); }
+function setDistance(i,v){ var distance=v===''?'':parseFloat(v); state.posts[i].distance=isFinite(distance)&&distance>=0?distance:''; save(); renderPosts(); }
+function addBait(i){ var el=document.getElementById('postNewBait'); var v=(el.value||'').trim(); if(!v)return;
+  if(state.baits.indexOf(v)<0) state.baits.push(v); state.posts[i].bait=v; save(); renderPosts(); renderPostDetail(); }
+function addMix(i){ var el=document.getElementById('postNewMix'); var v=(el.value||'').trim(); if(!v)return;
+  if(state.mixes.indexOf(v)<0) state.mixes.push(v); state.posts[i].mix=v; save(); renderPosts(); renderPostDetail(); }
 
 /* CATCH */
 var catchPost=null;
@@ -298,10 +388,11 @@ function saveCatch(){
   if(isNaN(kg)||kg<=0){ alert('Introdu cantitatea în kg.'); return; }
   var p=state.posts[catchPost];
   state.catches.push({ ts:Date.now(), post:catchPost+1, bait:p.bait||'(fără)', mix:p.mix||'(fără)',
+    distance:p.distance==null||p.distance===''?null:parseFloat(p.distance),
     kg:kg, spec:document.getElementById('cmSpec').value||'' });
   /* CATCH oprește + resetează cronometrul postului */
   p.timerStart=null; p.elapsed=0;
-  save(); closeCatch(); renderPosts(); renderStats(); renderHist();
+  save(); closeCatch(); renderPosts(); renderStats(); renderHist(); renderPostDetail();
 }
 
 /* ---------- GAUSS / CP-CPK STYLE CHART ---------- */
@@ -318,7 +409,8 @@ function gaussChart(container, lineEl, labels, values){
   var total=values.reduce(function(a,b){return a+b;},0);
   var mean=0; for(var i=0;i<n;i++){ mean += i*values[i]; } mean = total? mean/total : (n-1)/2;
   var varc=0; for(var i=0;i<n;i++){ varc += values[i]*Math.pow(i-mean,2); } varc = total? varc/total : 1;
-  var sd=Math.sqrt(varc); if(sd<0.35) sd=0.35; // avoid degenerate flat/too-spiky curve
+  if(varc<0.1225) varc=0.1225;
+  var sd=Math.sqrt(varc);
 
   var barW=iw/n*0.62;
   function x(idx){ return padL + (idx+0.5)*(iw/n); }
@@ -391,6 +483,20 @@ function renderStats(){
   var bl=Object.keys(bmap); bl.sort(function(a,b){return bmap[b]-bmap[a];});
   var bv=bl.map(function(k){return bmap[k];});
   gaussChart(document.getElementById('chartBait'), document.getElementById('statBaitLine'), bl, bv);
+
+  // Distances are captured with each catch; legacy catches are grouped as unset.
+  var dmap={}; state.catches.forEach(function(c){
+    var key=c.distance==null||c.distance===''?'Nesetat':String(c.distance);
+    dmap[key]=(dmap[key]||0)+c.kg;
+  });
+  var dl=Object.keys(dmap); dl.sort(function(a,b){
+    if(a==='Nesetat') return 1;
+    if(b==='Nesetat') return -1;
+    return parseFloat(a)-parseFloat(b);
+  });
+  var distanceLabels=dl.map(function(distance){return distance==='Nesetat'?distance:distance+' m';});
+  var distanceValues=dl.map(function(distance){return dmap[distance];});
+  gaussChart(document.getElementById('chartDistance'), document.getElementById('statDistanceLine'), distanceLabels, distanceValues);
 }
 
 /* HISTORY */
@@ -398,9 +504,9 @@ function renderHist(){
   var w=document.getElementById('histWrap');
   if(!state.catches.length){ w.innerHTML='<div class="empty">Nicio captură încă.</div>'; return; }
   var rows=state.catches.slice().sort(function(a,b){return b.ts-a.ts;});
-  var h='<table><thead><tr><th>Ora</th><th>Post</th><th>Momeală</th><th>Mix</th><th>kg</th><th></th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Ora</th><th>Post</th><th>Distanță</th><th>Momeală</th><th>Mix</th><th>kg</th><th></th></tr></thead><tbody>';
   rows.forEach(function(c){
-    h+='<tr><td>'+hhmm(c.ts)+'</td><td>'+c.post+'</td><td>'+c.bait+(c.spec?'<br><small>'+c.spec+'</small>':'')+'</td><td>'+c.mix+'</td><td>'+c.kg.toFixed(1)+'</td>'
+    h+='<tr><td>'+hhmm(c.ts)+'</td><td>'+c.post+'</td><td>'+(c.distance==null?'—':c.distance+' m')+'</td><td>'+c.bait+(c.spec?'<br><small>'+c.spec+'</small>':'')+'</td><td>'+c.mix+'</td><td>'+c.kg.toFixed(1)+'</td>'
       +'<td><button class="del" onclick="delCatch('+c.ts+')">✕</button></td></tr>';
   });
   h+='</tbody></table>'; w.innerHTML=h;
@@ -412,9 +518,9 @@ function delCatch(ts){ if(!confirm('Ștergi această captură?')) return;
 function download(name,text,type){ var b=new Blob([text],{type:type}); var u=URL.createObjectURL(b);
   var a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(u); }
-function exportCSV(){ var h='Data,Ora,Post,Momeala,Mix,Specie,Kg\n';
+function exportCSV(){ var h='Data,Ora,Post,Distanta_m,Momeala,Mix,Specie,Kg\n';
   state.catches.forEach(function(c){ var d=new Date(c.ts);
-    h+=[d.toLocaleDateString(),hhmm(c.ts),c.post,'"'+c.bait+'"','"'+c.mix+'"','"'+(c.spec||'')+'"',c.kg.toFixed(1)].join(',')+'\n'; });
+    h+=[d.toLocaleDateString(),hhmm(c.ts),c.post,c.distance==null?'':c.distance,'"'+c.bait+'"','"'+c.mix+'"','"'+(c.spec||'')+'"',c.kg.toFixed(1)].join(',')+'\n'; });
   download('capturi_broken_sling.csv',h,'text/csv'); }
 function exportJSON(){ download('capturi_broken_sling.json', JSON.stringify(state.catches,null,2),'application/json'); }
 function resetAll(){ if(!confirm('Sigur ștergi TOATE datele?')) return; if(!confirm('Ești 100% sigur? Nu se poate reveni.')) return;

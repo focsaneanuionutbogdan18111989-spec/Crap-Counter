@@ -1,5 +1,11 @@
+Version: v1.2.2
+
 # Crap-Counter
 
 Broken Sling carp-counter app.
 
-Open [index.html](index.html) in a browser to run the app. It is a self-contained static page and stores session data in the browser's local storage.
+Live app: [GitHub Pages](https://focsaneanuionutbogdan18111989-spec.github.io/Crap-Counter/)
+
+Open [index.html](index.html) in a browser to run the app. Keep [rodpod-pro.svg](rodpod-pro.svg) beside it; session data is stored in browser local storage.
+
+To publish, open the repository's **Settings > Pages**, select **Deploy from a branch**, then choose `main` and `/(root)`. Subsequent pushes to `main` update the site.
